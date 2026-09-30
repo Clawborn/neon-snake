@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#080d18">
+<title>NEON SNAKE · 霓虹贪吃蛇</title>
+<style>
+:root{color-scheme:dark;--bg:#080d18;--panel:#101a29;--mint:#72ffca;--muted:#8191aa;--pink:#ff6eaa}
+*{box-sizing:border-box}body{margin:0;min-height:100svh;background:radial-gradient(ellipse at 15% 10%,#15373370,transparent 48%),radial-gradient(ellipse at 90% 85%,#321d4770,transparent 45%),var(--bg);color:#eef6ff;font-family:system-ui,-apple-system,"Segoe UI",sans-serif;display:grid;place-items:center;padding:30px 20px}
+main{width:min(100%,560px)}header{display:flex;align-items:center;justify-content:space-between;margin-bottom:26px}.eyebrow{color:var(--mint);font-size:10px;letter-spacing:4px;font-weight:700;margin-bottom:8px}h1{font-size:30px;letter-spacing:-1px;margin:0;font-weight:850}h1 span{color:var(--mint)}.badge{font-size:10px;letter-spacing:2px;color:var(--mint);border:1px solid #72ffca30;background:#72ffca08;padding:8px 11px;border-radius:30px}.badge::before{content:"";display:inline-block;width:5px;height:5px;background:var(--mint);border-radius:50%;margin-right:7px;box-shadow:0 0 8px var(--mint)}
+.stats{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin-bottom:16px}.stat{border:1px solid #ffffff0c;border-radius:14px;background:linear-gradient(135deg,#152234,#101824);padding:15px 18px}.label{font-size:10px;letter-spacing:1.5px;color:var(--muted)}.value{font-size:28px;line-height:1.3;font-weight:750;font-variant-numeric:tabular-nums;margin-top:5px}.stat:first-child .value{color:var(--mint)}.stat:last-child .value{font-size:21px;margin-top:11px}.value small{font-size:11px;color:var(--muted);font-weight:400}
+.arena{position:relative;padding:10px;border:1px solid #72ffca30;border-radius:20px;background:#0b1420;box-shadow:0 0 50px #72ffca08,0 22px 70px #0006;overflow:hidden}canvas{display:block;width:100%;aspect-ratio:1;background:#0a121e;border-radius:12px;touch-action:none}.overlay{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;background:#080d18bb;backdrop-filter:blur(7px);padding:24px;text-align:center}.overlay[hidden]{display:none}.overlay-icon{width:60px;height:60px;border:1px solid #72ffca55;border-radius:18px;display:grid;place-items:center;margin:0 auto 22px;color:var(--mint);font-size:27px;background:#72ffca0a;box-shadow:0 0 35px #72ffca12}h2{font-size:29px;margin:0 0 12px;letter-spacing:-.5px}.overlay p{font-size:13px;line-height:1.8;color:#9dadc3;margin:0 0 25px;white-space:pre-line}button{cursor:pointer;font:inherit;border:0;border-radius:10px;transition:background .2s,transform .2s}button:active{transform:scale(.97)}button:focus-visible{outline:2px solid white;outline-offset:4px}.primary{background:var(--mint);color:#09271d;font-size:13px;font-weight:750;padding:14px 32px;box-shadow:0 0 24px #72ffca20}.primary:hover{background:#a2ffde}.toolbar{display:flex;align-items:center;justify-content:space-between;margin-top:17px;gap:12px}.status{color:var(--muted);font-size:11px;display:flex;align-items:center;gap:8px}.dot{height:6px;width:6px;border-radius:50%;background:var(--mint)}.secondary{padding:9px 14px;background:#ffffff07;border:1px solid #ffffff10;color:#b4c3d7;font-size:12px}.secondary:hover{background:#ffffff12}.help{display:flex;justify-content:center;flex-wrap:wrap;gap:18px;margin-top:26px;color:var(--muted);font-size:11px}kbd{font-family:inherit;font-size:10px;border:1px solid #ffffff19;border-bottom-width:2px;border-radius:4px;padding:3px 6px;color:#c2cede;margin-right:5px}footer{text-align:center;margin-top:23px;font-size:9px;color:#536379;letter-spacing:3px}.mobile{display:none}@media(max-width:480px){body{padding:22px 14px}header{margin-bottom:20px}h1{font-size:26px}.stat{padding:13px}.value{font-size:25px}.badge{letter-spacing:1px}.help{gap:12px}.mobile{display:inline}.desktop{display:none}footer{margin-top:18px}}
+@media(prefers-reduced-motion:reduce){button{transition:none}}
+</style>
+</head>
+<body>
+<main>
+<header><div><div class="eyebrow">THE ARCADE COLLECTION / 01</div><h1>NEON <span>SNAKE</span></h1></div><div class="badge">OFFLINE</div></header>
+<section class="stats" aria-label="游戏统计"><div class="stat"><div class="label">当前得分 / SCORE</div><div class="value" id="score">0</div></div><div class="stat"><div class="label">历史最高 / BEST</div><div class="value" id="best">0</div></div><div class="stat"><div class="label">速度等级 / LEVEL</div><div class="value"><span id="level">01</span> <small>/ 10</small></div></div></section>
+<div class="arena"><canvas id="board" width="600" height="600" aria-label="贪吃蛇游戏区域，用方向键或 WASD 移动，也可触屏滑动"></canvas><div class="overlay" id="overlay"><div><div class="overlay-icon" id="icon">↗</div><h2 id="title">追逐下一束光</h2><p id="description">吃掉光点，让自己变得更长。\n保持专注，别撞到边界或自己。</p><button class="primary" id="action">开始游戏 →</button></div></div></div>
+<div class="toolbar"><div class="status" role="status"><span class="dot"></span><span id="status">准备就绪 · 等待出发</span></div><button class="secondary" id="pause" disabled>Ⅱ 暂停</button></div>
+<div class="help"><span class="desktop"><kbd>↑ ↓ ← →</kbd><kbd>W A S D</kbd>转向</span><span><kbd>SPACE</kbd>暂停 / 继续</span><span class="mobile">↔ 在棋盘上滑动转向</span></div><footer>STAY SHARP. KEEP GROWING.</footer>
+</main>
+<script>
+'use strict';
+const $ = id => document.getElementById(id);
+const canvas = $('board'), ctx = canvas.getContext('2d');
+const SIZE = 24, CELL = canvas.width / SIZE, STORAGE_KEY = 'neon-snake-best-v1';
+let best = 0;
+// 隐私模式或存储受限时，游戏仍然可正常运行。
+try { best = Math.max(0, Number(localStorage.getItem(STORAGE_KEY)) || 0); } catch (_) {}
+let snake, food, direction, turns, score = 0, state = 'ready', lastTime = 0, elapsed = 0;
+const directions = {ArrowUp:{x:0,y:-1},w:{x:0,y:-1},ArrowDown:{x:0,y:1},s:{x:0,y:1},ArrowLeft:{x:-1,y:0},a:{x:-1,y:0},ArrowRight:{x:1,y:0},d:{x:1,y:0}};
+const level = () => Math.min(10, 1 + Math.floor(score / 50));
+const interval = () => 160 - (level() - 1) * 11;
+function updateStats() { $('score').textContent = score; $('best').textContent = best; $('level').textContent = String(level()).padStart(2,'0'); }
+function placeFood() {
+  // 从空格中随机挑选，避免蛇填满棋盘时出现无限循环。
+  const empty = [];
+  for(let y=0;y<SIZE;y++) for(let x=0;x<SIZE;x++) if(!snake.some(p=>p.x===x&&p.y===y)) empty.push({x,y});
+  food = empty.length ? empty[Math.floor(Math.random()*empty.length)] : null;
+}
+function resetBoard() { snake=[{x:8,y:12},{x:7,y:12},{x:6,y:12},{x:5,y:12}];direction={x:1,y:0};turns=[];score=0;elapsed=0;placeFood();updateStats();draw(); }
+function start() { resetBoard();state='running';lastTime=performance.now();$('overlay').hidden=true;$('pause').disabled=false;updateStatus();canvas.focus(); }
+function updateStatus() { $('status').textContent=state==='running'?'正在游玩 · 每个光点 +10 分':state==='paused'?'已暂停 · 深呼吸，再出发':'本局结束 · 再挑战一次';$('pause').textContent=state==='paused'?'▶ 继续':'Ⅱ 暂停'; }
+function showOverlay(title, description, button, icon) { $('title').textContent=title;$('description').textContent=description;$('action').textContent=button;$('icon').textContent=icon;$('overlay').hidden=false; }
+function togglePause() {
+  if(state==='running'){state='paused';showOverlay('稍作休息','你的进度已保留。\n按空格键或点击按钮继续。','继续游戏 →','Ⅱ');}
+  else if(state==='paused'){state='running';lastTime=performance.now();$('overlay').hidden=true;}
+  updateStatus();
+}
+function finish(won=false) { state='over';$('pause').disabled=true;showOverlay(won?'完美通关！':'旅程暂告一段落',`本局得分  ${score}   /   历史最高  ${best}\n${won?'你点亮了整个棋盘。':'再来一次，追逐新的纪录。'}`,'重新开始 →',won?'✦':'↻');updateStatus(); }
+function steer(next) {
+  if(state!=='running'||turns.length>=2) return;
+  // 方向队列每步只消耗一次，防止连续按键造成瞬间掉头。
+  const previous=turns.length?turns[turns.length-1]:direction;
+  if(next.x===previous.x&&next.y===previous.y || next.x===-previous.x&&next.y===-previous.y) return;
+  turns.push(next);
+}
+function step() {
+  if(turns.length) direction=turns.shift();
+  const head={x:snake[0].x+direction.x,y:snake[0].y+direction.y};
+  const eating=food&&head.x===food.x&&head.y===food.y;
+  // 不吃食物时尾巴会移走，因此允许进入当前尾巴所在的格子。
+  const body=eating?snake:snake.slice(0,-1);
+  if(head.x<0||head.y<0||head.x>=SIZE||head.y>=SIZE||body.some(p=>p.x===head.x&&p.y===head.y)){finish();return;}
+  snake.unshift(head);
+  if(eating){score+=10;if(score>best){best=score;try{localStorage.setItem(STORAGE_KEY,String(best));}catch(_){}}updateStats();placeFood();if(!food) finish(true);}
+  else snake.pop();
+  draw();
+}
+function draw() {
+  ctx.clearRect(0,0,600,600);ctx.fillStyle='#0a121e';ctx.fillRect(0,0,600,600);
+  ctx.strokeStyle='#ffffff04';ctx.lineWidth=1;
+  for(let i=0;i<=SIZE;i++){ctx.beginPath();ctx.moveTo(i*CELL,0);ctx.lineTo(i*CELL,600);ctx.moveTo(0,i*CELL);ctx.lineTo(600,i*CELL);ctx.stroke();}
+  if(food){const x=(food.x+.5)*CELL,y=(food.y+.5)*CELL;ctx.shadowColor='#ff6eaa';ctx.shadowBlur=22;ctx.fillStyle='#ff6eaa';ctx.beginPath();ctx.arc(x,y,7,0,Math.PI*2);ctx.fill();ctx.shadowBlur=0;ctx.strokeStyle='#ff6eaa35';ctx.beginPath();ctx.arc(x,y,11,0,Math.PI*2);ctx.stroke();ctx.fillStyle='#ffd4e5';ctx.beginPath();ctx.arc(x-2,y-2,2,0,Math.PI*2);ctx.fill();}
+  snake.forEach((p,i)=>{ctx.fillStyle=i===0?'#b4ffe2':`hsl(158 80% ${Math.max(30,62-i*.6)}%)`;ctx.shadowColor='#72ffca';ctx.shadowBlur=i===0?16:5;ctx.beginPath();ctx.roundRect(p.x*CELL+2,p.y*CELL+2,CELL-4,CELL-4,i===0?7:5);ctx.fill();});ctx.shadowBlur=0;
+  const h=snake[0],cx=(h.x+.5)*CELL,cy=(h.y+.5)*CELL;ctx.fillStyle='#123d31';
+  for(const side of [-1,1]){ctx.beginPath();ctx.arc(cx+direction.x*5+(direction.y?side*4:0),cy+direction.y*5+(direction.x?side*4:0),2,0,Math.PI*2);ctx.fill();}
+}
+// 用单一动画循环累计时间，暂停期间不推进游戏；切回标签页时不补跑。
+function frame(time) { if(state==='running'){elapsed+=Math.min(time-lastTime,200);if(elapsed>=interval()){elapsed%=interval();step();}}lastTime=time;requestAnimationFrame(frame); }
+document.addEventListener('keydown',event=>{if(event.target instanceof HTMLButtonElement&&event.code==='Space')return;const key=event.key.length===1?event.key.toLowerCase():event.key;if(directions[key]){event.preventDefault();steer(directions[key]);}else if(event.code==='Space'){event.preventDefault();if(state==='ready'||state==='over')start();else togglePause();}});
+let touchStart=null;
+canvas.addEventListener('pointerdown',event=>{if(event.pointerType==='mouse')return;touchStart={x:event.clientX,y:event.clientY};canvas.setPointerCapture(event.pointerId);});
+canvas.addEventListener('pointerup',event=>{if(!touchStart)return;const dx=event.clientX-touchStart.x,dy=event.clientY-touchStart.y;touchStart=null;if(Math.max(Math.abs(dx),Math.abs(dy))<15)return;steer(Math.abs(dx)>Math.abs(dy)?{x:Math.sign(dx),y:0}:{x:0,y:Math.sign(dy)});});
+canvas.addEventListener('pointercancel',()=>touchStart=null);
+document.addEventListener('visibilitychange',()=>{if(document.hidden&&state==='running')togglePause();});
+$('action').addEventListener('click',()=>{if(state==='paused')togglePause();else start();$('action').blur();});
+$('pause').addEventListener('click',()=>{togglePause();$('pause').blur();});
+$('description').textContent='吃掉光点，让自己变得更长。\n保持专注，别撞到边界或自己。';
+resetBoard();requestAnimationFrame(frame);
+</script>
+</body>
+</html>
